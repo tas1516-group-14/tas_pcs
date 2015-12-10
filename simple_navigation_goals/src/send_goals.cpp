@@ -1,0 +1,95 @@
+/*
+#include "ros/ros.h"
+#include "geometry_msgs/Pose.h"
+#include "goal_subscriber_class.hpp"
+
+int main(int argc, char** argv){
+
+ros::init(argc, argv, "send_goals");
+ros::NodeHandle n;
+
+
+
+ros::Publisher goal= n.advertise<geometry_msgs::Pose>("my_goals/goal",100);
+
+ros::Rate r(10);
+
+
+
+geometry_msgs::Pose goal_msg;
+
+
+//insert your waypoints here
+int i=25;
+while(i>0){
+    goal_msg.position.x= i;
+    goal_msg.position.y = 19.75;
+    goal_msg.position.z = 0.000;
+    goal_msg.orientation.x = 0.000;
+    goal_msg.orientation.y = 0.000;
+    goal_msg.orientation.z = 1;
+    goal_msg.orientation.w = 0;
+    goal.publish(goal_msg);
+    i--;
+    ROS_INFO("goal [%f]",goal_msg.position.x);
+    ros::spinOnce();
+    r.sleep();
+}
+
+return 0;
+}
+*/
+
+#include "ros/ros.h"
+#include "geometry_msgs/Pose.h"
+#include "goal_subscriber_class.hpp"
+
+
+
+#include "geometry_msgs/PointStamped.h" //für die KlickPunkt Ausgabe
+
+float x,y,z;
+
+void klickCallback(const geometry_msgs::PointStamped& klickpoint)  // wurde mit "rostopic type /clicked_point " entnommen und die Messagebezeichnung ist frei wählbar (myname.msgname dabei wird msgname mit rostopic "type /clicked_point | rosmsg show" angezeigt)
+
+{
+
+  x=klickpoint.point.x;
+  y=klickpoint.point.y;
+  z=klickpoint.point.z;
+}
+
+int main(int argc, char** argv){
+
+ros::init(argc, argv, "send_goals");
+ros::NodeHandle n;
+
+
+ros::Publisher goal= n.advertise<geometry_msgs::Pose>("my_goals/goal",100);
+ros::Subscriber sub = n.subscribe("/clicked_point", 1000, klickCallback);
+
+ros::spin();
+ros::Rate r(10);
+
+
+
+geometry_msgs::Pose goal_msg;
+
+
+
+    goal_msg.position.x= x;
+    goal_msg.position.y = y;
+    goal_msg.position.z = z;
+    goal_msg.orientation.x = 0.000;
+    goal_msg.orientation.y = 0.000;
+    goal_msg.orientation.z = 1;
+    goal_msg.orientation.w = 0;
+    goal.publish(goal_msg);
+    ROS_INFO("goal [%f]",goal_msg.position.x);
+    ros::spinOnce();
+    r.sleep();
+
+
+return 0;
+}
+

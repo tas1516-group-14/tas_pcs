@@ -161,3 +161,15 @@ target_link_libraries(simple_navigation_goals_node
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+add_executable(simple_navigation_goals src/main.cpp)
+target_link_libraries(simple_navigation_goals
+  ${catkin_LIBRARIES}
+)
+
+
+add_executable(send_goals src/send_goals.cpp)
+
+target_link_libraries(send_goals
+  ${catkin_LIBRARIES}
+)

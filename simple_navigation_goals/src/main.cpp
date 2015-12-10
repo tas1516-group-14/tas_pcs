@@ -7,6 +7,7 @@
 #include <move_base_msgs/MoveBaseAction.h>
 #include <move_base_msgs/MoveBaseActionResult.h>
 #include <actionlib/client/simple_action_client.h>
+#include "goal_subscriber_class.hpp"
 
 using namespace std;
 
@@ -38,19 +39,32 @@ void feedbackCb(const move_base_msgs::MoveBaseFeedbackConstPtr& feedback) {
  */
 int main(int argc, char** argv){
     ros::init(argc, argv, "simple_navigation_goals"); // init and set name
-    std::vector<geometry_msgs::Pose> waypoints; // vector of goals, with position and orientation
-
+    //std::vector<geometry_msgs::Pose> waypoints; // vector of goals, with position and orientation
+    ros::NodeHandle n;
+/*
     geometry_msgs::Pose waypoint1;
-    waypoint1.position.x = 22.0;
-    waypoint1.position.y = 10.75;
+    waypoint1.position.x = 20.0;
+    waypoint1.position.y = 19.75;
     waypoint1.position.z = 0.000;
     waypoint1.orientation.x = 0.000;
     waypoint1.orientation.y = 0.000;
-    waypoint1.orientation.z = 0;
-    waypoint1.orientation.w = 1;
+    waypoint1.orientation.z = 1;
+    waypoint1.orientation.w = 0;
     waypoints.push_back(waypoint1);
 
-
+    geometry_msgs::Pose waypoint2;
+    waypoint2.position.x = 15.0;
+    waypoint2.position.y = 19.75;
+    waypoint2.position.z = 0.000;
+    waypoint2.orientation.x = 0.000;
+    waypoint2.orientation.y = 0.000;
+    waypoint2.orientation.z = 1;
+    waypoint2.orientation.w = 0;
+    waypoints.push_back(waypoint2);
+*/
+    Goal_subscriber my_sub;
+    ros::Subscriber test= n.subscribe("my_goals/goal", 100, &Goal_subscriber::call_back_goal, &my_sub);
+    ros::Rate r(10);
 
 
     MoveBaseClient ac("move_base", true); // action client to spin a thread by default
@@ -62,9 +76,17 @@ int main(int argc, char** argv){
     move_base_msgs::MoveBaseGoal goal;
     goal.target_pose.header.frame_id = "map"; // set target pose frame of coordinates
 
-    for(int i = 0; i < waypoints.size(); ++i) { // loop over all goal points, point by point
+    while (ros::ok() && my_sub.waypoints.size() == 0){
+
+        ROS_INFO("you're gay!");
+        r.sleep();
+        ros::spinOnce();
+
+    }
+
+    for(int i = 0; i < my_sub.waypoints.size(); ++i) { // loop over all goal points, point by point
         goal.target_pose.header.stamp = ros::Time::now(); // set current time
-        goal.target_pose.pose = waypoints.at(i);
+        goal.target_pose.pose = my_sub.waypoints.at(i);
         ROS_INFO("Sending goal");
         ac.sendGoal(goal, &doneCb, &activeCb, &feedbackCb); // send goal and register callback handler
         ac.waitForResult(); // wait for goal result
