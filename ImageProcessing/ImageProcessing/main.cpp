@@ -32,21 +32,31 @@ int main()
     debug.BildAnzeigen("Vor der Bearbeitung:", BinaryImage);
     debug.BildAnzeigen("Nach der Bearbeitung:", BinaryImageManipulated);
 
-    cout << "Kannten erkannt!" << endl;
-    vector<vector<cv::Point> > Kannten;
+    cout << "Contour erkannt!" << endl;
+    vector<vector<cv::Point> > Contour;
     vector< cv::Vec4i > hierarchy;
-    cv::findContours(BinaryImageManipulated, Kannten, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0) );
+    cv::findContours(BinaryImageManipulated, Contour, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0) );
 
 
+    vector<vector<cv::Point> > Contour2;
+    vector< cv::Vec4i > hierarchy2;
+    for(int i = 0; i < Contour.size(); i++ ){
+        if(hierarchy[i][3] == -1){
+            Contour2.push_back(Contour[i]);
+            hierarchy2.push_back(hierarchy[i]);
+        }
 
-    cv::Mat Contour;
-    Contour = InputImage;
-    for( int i = 0; i< Kannten.size(); i++ )
+    }
+
+
+    cv::Mat ContourImage;
+    ContourImage = InputImage;
+    for( int i = 0; i< Contour2.size(); i++ )
          {
            cv::Scalar color = cv::Scalar(0, 0,255);
-           cv::drawContours( Contour, Kannten, i, color, 2, 8, hierarchy, 0, cv::Point() );
+           cv::drawContours( ContourImage, Contour2, i, color, 2, 8, hierarchy, 0, cv::Point() );
          }
-    debug.BildAnzeigen("Ergebnis:", Contour);
+    debug.BildAnzeigen("Ergebnis:", ContourImage);
 
 
     cv::waitKey(0);
