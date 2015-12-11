@@ -45,6 +45,10 @@ int main()
             Contour2.push_back(Contour[i]);
             hierarchy2.push_back(hierarchy[i]);
         }
+        if(hierarchy[i][1] == 1){
+            Contour2.push_back(Contour[i]);
+            hierarchy2.push_back(hierarchy[i]);
+        }
 
     }
 
