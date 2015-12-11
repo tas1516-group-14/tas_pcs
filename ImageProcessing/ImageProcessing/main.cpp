@@ -2,21 +2,19 @@
 
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+
+#include "debugfunctions.h"
 using namespace std;
 
-void BildAnzeigen(const string& Eingangstring, cv::Mat InputImage){
 
-    cv::namedWindow(Eingangstring, cv::WINDOW_AUTOSIZE);
-    cv::imshow(Eingangstring, InputImage);
-}
 
 int main()
 {
-    cv::Mat InputImage, GrayscaleImage, BinaryImage;
-
+    cv::Mat InputImage, GrayscaleImage, BinaryImage, BinaryImageManipulated;
+    DebugFunctions debug;
 
     InputImage = cv::imread("Map.png");
-    BildAnzeigen("Eingangsbild:", InputImage);
+    debug.BildAnzeigen("Eingangsbild:", InputImage);
 
     cout << "In Graustufen konvertiert!" << endl;
     cv::cvtColor(InputImage, GrayscaleImage, CV_RGB2GRAY);
@@ -25,21 +23,30 @@ int main()
 
     cout << "Binärbild erstellt!" << endl;
     cv::inRange(GrayscaleImage, cv::Scalar(254,254,254), cv::Scalar(255,255,255), BinaryImage);
-    BildAnzeigen("Binärbild:", BinaryImage);
+    debug.BildAnzeigen("Binärbild:", BinaryImage);
 
+    int SizeForMorph = 2;
+    cv::Mat element = cv::getStructuringElement(0, cv::Size(2*SizeForMorph, 2*SizeForMorph), cv::Point(SizeForMorph,SizeForMorph));
+    cv::morphologyEx(BinaryImage, BinaryImageManipulated, CV_MOP_CLOSE , element);
+
+    debug.BildAnzeigen("Vor der Bearbeitung:", BinaryImage);
+    debug.BildAnzeigen("Nach der Bearbeitung:", BinaryImageManipulated);
 
     cout << "Kannten erkannt!" << endl;
     vector<vector<cv::Point> > Kannten;
-    vector<cv::Vec4i> hierarchy;
-    cv::findContours(BinaryImage, Kannten, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0) );
+    vector< cv::Vec4i > hierarchy;
+    cv::findContours(BinaryImageManipulated, Kannten, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0) );
 
 
+
+    cv::Mat Contour;
+    Contour = InputImage;
     for( int i = 0; i< Kannten.size(); i++ )
          {
            cv::Scalar color = cv::Scalar(0, 0,255);
-           cv::drawContours( InputImage, Kannten, i, color, 2, 8, hierarchy, 0, cv::Point() );
+           cv::drawContours( Contour, Kannten, i, color, 2, 8, hierarchy, 0, cv::Point() );
          }
-    BildAnzeigen("Ergebnis:", InputImage);
+    debug.BildAnzeigen("Ergebnis:", Contour);
 
 
     cv::waitKey(0);

@@ -45,8 +45,10 @@ OBJECTS_DIR   = ./
 
 ####### Files
 
-SOURCES       = ../ImageProcessing/main.cpp 
-OBJECTS       = main.o
+SOURCES       = ../ImageProcessing/main.cpp \
+		../ImageProcessing/debugfunctions.cpp 
+OBJECTS       = main.o \
+		debugfunctions.o
 DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/common/shell-unix.conf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/common/unix.conf \
@@ -281,8 +283,11 @@ compiler_clean:
 
 ####### Compile
 
-main.o: ../ImageProcessing/main.cpp 
+main.o: ../ImageProcessing/main.cpp ../ImageProcessing/debugfunctions.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o ../ImageProcessing/main.cpp
+
+debugfunctions.o: ../ImageProcessing/debugfunctions.cpp ../ImageProcessing/debugfunctions.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o debugfunctions.o ../ImageProcessing/debugfunctions.cpp
 
 ####### Install
 
