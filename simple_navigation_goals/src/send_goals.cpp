@@ -1,4 +1,4 @@
-/*
+
 #include "ros/ros.h"
 #include "geometry_msgs/Pose.h"
 #include "goal_subscriber_class.hpp"
@@ -38,8 +38,8 @@ while(i>0){
 
 return 0;
 }
-*/
 
+/*
 #include "ros/ros.h"
 #include "geometry_msgs/Pose.h"
 #include "goal_subscriber_class.hpp"
@@ -92,4 +92,4 @@ geometry_msgs::Pose goal_msg;
 
 return 0;
 }
-
+*/
