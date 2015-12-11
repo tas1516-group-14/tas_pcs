@@ -32,6 +32,23 @@ int main()
     debug.BildAnzeigen("Vor der Bearbeitung:", BinaryImage);
     debug.BildAnzeigen("Nach der Bearbeitung:", BinaryImageManipulated);
 
+<<<<<<< HEAD
+    cout << "Kannten erkannt!" << endl;
+    vector<vector<cv::Point> > Kannten;
+    vector< cv::Vec4i > hierarchy;
+    cv::findContours(BinaryImageManipulated, Kannten, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0) );
+
+
+
+    cv::Mat Contour;
+    Contour = InputImage;
+    for( int i = 0; i< Kannten.size(); i++ )
+         {
+           cv::Scalar color = cv::Scalar(0, 0,255);
+           cv::drawContours( Contour, Kannten, i, color, 2, 8, hierarchy, 0, cv::Point() );
+         }
+    debug.BildAnzeigen("Ergebnis:", Contour);
+=======
     cout << "Contour erkannt!" << endl;
     vector<vector<cv::Point> > Contour;
     vector< cv::Vec4i > hierarchy;
@@ -61,6 +78,7 @@ int main()
            cv::drawContours( ContourImage, Contour2, i, color, 2, 8, hierarchy, 0, cv::Point() );
          }
     debug.BildAnzeigen("Ergebnis:", ContourImage);
+>>>>>>> e7d4a5ad9f346f6454441246234f3d96a98496f4
 
 
     cv::waitKey(0);

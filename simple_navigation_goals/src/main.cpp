@@ -76,26 +76,37 @@ int main(int argc, char** argv){
     move_base_msgs::MoveBaseGoal goal;
     goal.target_pose.header.frame_id = "map"; // set target pose frame of coordinates
 
-    while (ros::ok() && my_sub.waypoints.size() == 0){
 
-        ROS_INFO("you're gay!");
+        while (ros::ok()){
+
+            if(my_sub.waypoints.size() == 0){
+            ROS_INFO("Wait for waypoints!");
+
+
+            }
+
+
+
+        if(my_sub.waypoints.size() > 0){
+        for(int i = 0; i < my_sub.waypoints.size(); ++i) { // loop over all goal points, point by point
+          goal.target_pose.header.stamp = ros::Time::now(); // set current time
+          goal.target_pose.pose = my_sub.waypoints.at(i);
+          ROS_INFO("Sending goal");
+           ac.sendGoal(goal, &doneCb, &activeCb, &feedbackCb); // send goal and register callback handler
+           ac.waitForResult(); // wait for goal result
+
+          if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED) {
+              ROS_INFO("The base moved to %d goal", i);
+          } else {
+             ROS_INFO("The base failed to move to %d goal for some reason", i);
+          }
+        }
+        }
+
         r.sleep();
         ros::spinOnce();
-
     }
 
-    for(int i = 0; i < my_sub.waypoints.size(); ++i) { // loop over all goal points, point by point
-        goal.target_pose.header.stamp = ros::Time::now(); // set current time
-        goal.target_pose.pose = my_sub.waypoints.at(i);
-        ROS_INFO("Sending goal");
-        ac.sendGoal(goal, &doneCb, &activeCb, &feedbackCb); // send goal and register callback handler
-        ac.waitForResult(); // wait for goal result
 
-        if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED) {
-            ROS_INFO("The base moved to %d goal", i);
-        } else {
-            ROS_INFO("The base failed to move to %d goal for some reason", i);
-        }
-    }
     return 0;
 }
