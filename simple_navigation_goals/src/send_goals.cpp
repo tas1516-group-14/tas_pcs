@@ -15,38 +15,29 @@ geometry_msgs::Pose goal_msg;
 
 ros::Publisher goal= n.advertise<geometry_msgs::Pose>("my_goals/goal",100);
 
+
 ros::Rate r(1);
 
 if(argc == 2){
-ROS_INFO("%s", *(argv+1));
 std::stringstream sstr(*(argv+1));
 sstr >> x_pos;
 
-ROS_INFO("bla  bala %f", x_pos);
-goal_msg.position.x= x_pos;
 goal_msg.position.y = 19.75;
 goal_msg.position.z = 0.000;
 goal_msg.orientation.x = 0.000;
 goal_msg.orientation.y = 0.000;
 goal_msg.orientation.z = 1;
 goal_msg.orientation.w = 0;
-goal.publish(goal_msg);
-r.sleep();
-return 0;
+goal_msg.position.x= x_pos;
+
 }
 
 
 
 //insert your waypoints here
-int i=1;
+int i= 2;
 while(i>0){
-    goal_msg.position.x= i;
-    goal_msg.position.y = 19.75;
-    goal_msg.position.z = 0.000;
-    goal_msg.orientation.x = 0.000;
-    goal_msg.orientation.y = 0.000;
-    goal_msg.orientation.z = 1;
-    goal_msg.orientation.w = 0;
+
     goal.publish(goal_msg);
     i--;
     ROS_INFO("goal [%f]",goal_msg.position.x);
