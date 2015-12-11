@@ -1,0 +1,66 @@
+#include <iostream>
+
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
+
+#include "debugfunctions.h"
+using namespace std;
+
+
+
+int main()
+{
+    cv::Mat InputImage, GrayscaleImage, BinaryImage, BinaryImageManipulated;
+    DebugFunctions debug;
+
+    InputImage = cv::imread("Map.png");
+    debug.BildAnzeigen("Eingangsbild:", InputImage);
+
+    cout << "In Graustufen konvertiert!" << endl;
+    cv::cvtColor(InputImage, GrayscaleImage, CV_RGB2GRAY);
+
+
+
+    cout << "Binärbild erstellt!" << endl;
+    cv::inRange(GrayscaleImage, cv::Scalar(254,254,254), cv::Scalar(255,255,255), BinaryImage);
+    debug.BildAnzeigen("Binärbild:", BinaryImage);
+
+    int SizeForMorph = 2;
+    cv::Mat element = cv::getStructuringElement(0, cv::Size(2*SizeForMorph, 2*SizeForMorph), cv::Point(SizeForMorph,SizeForMorph));
+    cv::morphologyEx(BinaryImage, BinaryImageManipulated, CV_MOP_CLOSE , element);
+
+    debug.BildAnzeigen("Vor der Bearbeitung:", BinaryImage);
+    debug.BildAnzeigen("Nach der Bearbeitung:", BinaryImageManipulated);
+
+    cout << "Contour erkannt!" << endl;
+    vector<vector<cv::Point> > Contour;
+    vector< cv::Vec4i > hierarchy;
+    cv::findContours(BinaryImageManipulated, Contour, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0) );
+
+
+    vector<vector<cv::Point> > Contour2;
+    vector< cv::Vec4i > hierarchy2;
+    for(int i = 0; i < Contour.size(); i++ ){
+        if(hierarchy[i][3] == -1){
+            Contour2.push_back(Contour[i]);
+            hierarchy2.push_back(hierarchy[i]);
+        }
+
+        
+    }
+
+
+    cv::Mat ContourImage;
+    ContourImage = InputImage;
+    for( int i = 0; i< Contour2.size(); i++ )
+         {
+           cv::Scalar color = cv::Scalar(0, 0,255);
+           cv::drawContours( ContourImage, Contour2, i, color, 2, 8, hierarchy, 0, cv::Point() );
+         }
+    debug.BildAnzeigen("Ergebnis:", ContourImage);
+
+
+    cv::waitKey(0);
+    return 0;
+}
+
