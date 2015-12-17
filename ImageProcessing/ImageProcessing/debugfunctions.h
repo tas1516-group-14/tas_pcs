@@ -10,6 +10,7 @@ class DebugFunctions
 public:
     DebugFunctions();
     void BildAnzeigen(const std::string& Eingangstring, cv::Mat InputImage);
+    cv::Mat DrawLines(cv::Mat InputImage, double Punkt1X, double Punkt1Y, double Punkt2X, double Punkt2Y, cv::Scalar Color, double Size);
 };
 
 #endif // DEBUGFUNCTIONS_H
