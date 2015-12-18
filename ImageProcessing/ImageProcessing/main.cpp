@@ -1,5 +1,7 @@
 #include <iostream>
 
+
+
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
@@ -16,11 +18,14 @@ struct Schnittpunkte{
 
 int main()
 {
+
     cv::Mat InputImage, GrayscaleImage, BinaryImage, BinaryImageManipulated;
     DebugFunctions debug;
 
     InputImage = cv::imread("Map.png");
     debug.BildAnzeigen("Eingangsbild:", InputImage);
+
+
 
     cout << "In Graustufen konvertiert!" << endl;
     cv::cvtColor(InputImage, GrayscaleImage, CV_RGB2GRAY);
@@ -70,19 +75,22 @@ int main()
 
     cv::Mat ContourImage;
     ContourImage = InputImage;
-    for( int i = 0; i< FoundContours.size(); i++ ){
-        if(i == 0){
-            cv::drawContours( ContourImage, FoundContours, i, cv::Scalar(255, 0,255), 2, 8, hierarchy, 0, cv::Point() );
-        }else{
-            cv::drawContours( ContourImage, FoundContours, i, cv::Scalar(0, 255,0), 2, 8, hierarchy, 0, cv::Point() );
-        }
-    }
+//    for( int i = 0; i< FoundContours.size(); i++ ){
+//        if(i == 0){
+//            cv::drawContours( ContourImage, FoundContours, i, cv::Scalar(255, 0,255), 2, 8, hierarchy, 0, cv::Point() );
+//        }else{
+//            cv::drawContours( ContourImage, FoundContours, i, cv::Scalar(0, 255,0), 2, 8, hierarchy, 0, cv::Point() );
+//        }
+//    }
+
+    int LineSizeRow = ContourImage.rows/50;
+    int LineSizeCol = ContourImage.cols/50;
 
 
     //Horizontale Linien
     std::vector<Schnittpunkte> FoundPointOnContour;
     for(int u = 0; u < FoundContours.size(); u++ ){
-        for(int i = 0; i <= ContourImage.rows; i = i+(ContourImage.rows/100)){          //Für 100 Schnittlinien
+        for(int i = 0; i <= ContourImage.rows; i = i+ LineSizeRow){          //Für 100 Schnittlinien
             Schnittpunkte Schnittpunkt;
             for (int z = 0; z < FoundContours[u].size(); z++){
                 if( FoundContours[u][z].y == i ){
@@ -101,7 +109,7 @@ int main()
 
     //Vertikale Linien
     for(int u = 0; u < FoundContours.size(); u++ ){
-        for(int i = 0; i <= ContourImage.cols; i = i+(ContourImage.cols/100)){
+        for(int i = 0; i <= ContourImage.cols; i = i+LineSizeCol){
             Schnittpunkte Schnittpunkt;
             for (int z = 0; z < FoundContours[u].size(); z++){
                 if( FoundContours[u][z].x == i ){
@@ -117,11 +125,41 @@ int main()
         }
     }
 
+
+
+
+    for(int i = 0; i <  FoundPointOnContour.size(); i++){
+        double direction0    =   FoundPointOnContour[i].direction;
+        double line0         =   FoundPointOnContour[i].line;
+        double contour0      =   FoundPointOnContour[i].contour;
+        bool found = false;
+        for(int u = 0; u < FoundPointOnContour.size(); u++){
+            double direction1    =   FoundPointOnContour[u].direction;
+            double line1         =   FoundPointOnContour[u].line;
+            double contour1      =   FoundPointOnContour[u].contour;
+            if(line0 == line1 && u != i && direction0 == direction1 && contour0 != contour1){
+                found = true;
+                break;
+            }
+        }
+        if(!found){
+            FoundPointOnContour.erase(FoundPointOnContour.begin()+i);
+            i =  0;
+        }
+    }
+
+
     //Zeichnen der Punkte und Schnittlinien
     for(int u = 0; u < FoundPointOnContour.size(); u++){
         Schnittpunkte Schnittpunkt = FoundPointOnContour[u];
         for(int i = 0; i < Schnittpunkt.Points.size(); i++){
+            if(Schnittpunkt.contour == 0){
+            debug.DrawLines(ContourImage, Schnittpunkt.Points[i].x, Schnittpunkt.Points[i].y, Schnittpunkt.Points[i].x, Schnittpunkt.Points[i].y, cv::Scalar(255,0,255), 5);
+
+            }else{
             debug.DrawLines(ContourImage, Schnittpunkt.Points[i].x, Schnittpunkt.Points[i].y, Schnittpunkt.Points[i].x, Schnittpunkt.Points[i].y, cv::Scalar(0,0,255), 5);
+
+            }
             if(Schnittpunkt.direction == 0){
                 debug.DrawLines(ContourImage, 0, Schnittpunkt.line,ContourImage.cols, Schnittpunkt.line, cv::Scalar(255,0,0), 1);
             }else{
@@ -131,6 +169,30 @@ int main()
         }
     }
 
+    double MatrixDistance;
+
+    for(int i = 0; i < FoundPointOnContour.size(); i++){
+        std::vector<double> PointDistance0,PointDistance1, DistanceBetweenPoints;
+        std::vector<cv::Point> Point0, Point1;
+        Point0 = FoundPointOnContour[i].Points;
+        double line = FoundPointOnContour[i].line;
+        double direction = FoundPointOnContour[i].direction;
+        for(int u = 0; u < FoundPointOnContour.size(); u++){
+            if(line == FoundPointOnContour[u].line && 0 < FoundPointOnContour[u].contour && FoundPointOnContour[i].direction == FoundPointOnContour[u].direction){
+                Point1 = FoundPointOnContour[u].Points;
+            }
+        }
+        if(Point0.size() > 0 && Point1.size() > 0){
+
+
+        for(int i = 1; i < Point0.size(); i++){
+            for(int u = 1; u < Point1.size(); u++){
+                DistanceBetweenPoints.push_back(sqrt( pow( Point0[i].x-Point1[u].x, 2) + pow( Point0[i].x-Point1[u].y, 2)));
+            }
+        }
+        }
+       double test;
+    }
 
 
 
