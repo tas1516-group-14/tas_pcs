@@ -1,5 +1,5 @@
 #include <iostream>
-
+#include <ncurses.h>
 
 
 #include <opencv2/imgproc/imgproc.hpp>
@@ -169,30 +169,34 @@ int main()
         }
     }
 
-    double MatrixDistance;
-
-    for(int i = 0; i < FoundPointOnContour.size(); i++){
-        std::vector<double> PointDistance0,PointDistance1, DistanceBetweenPoints;
-        std::vector<cv::Point> Point0, Point1;
-        Point0 = FoundPointOnContour[i].Points;
-        double line = FoundPointOnContour[i].line;
-        double direction = FoundPointOnContour[i].direction;
-        for(int u = 0; u < FoundPointOnContour.size(); u++){
-            if(line == FoundPointOnContour[u].line && 0 < FoundPointOnContour[u].contour && FoundPointOnContour[i].direction == FoundPointOnContour[u].direction){
-                Point1 = FoundPointOnContour[u].Points;
-            }
-        }
-        if(Point0.size() > 0 && Point1.size() > 0){
 
 
-        for(int i = 1; i < Point0.size(); i++){
-            for(int u = 1; u < Point1.size(); u++){
-                DistanceBetweenPoints.push_back(sqrt( pow( Point0[i].x-Point1[u].x, 2) + pow( Point0[i].x-Point1[u].y, 2)));
-            }
-        }
-        }
-       double test;
-    }
+//    cout << '\a' << endl;
+
+//    double MatrixDistance;
+
+//    for(int i = 0; i < FoundPointOnContour.size(); i++){
+//        std::vector<double> PointDistance0,PointDistance1, DistanceBetweenPoints;
+//        std::vector<cv::Point> Point0, Point1;
+//        Point0 = FoundPointOnContour[i].Points;
+//        double line = FoundPointOnContour[i].line;
+//        double direction = FoundPointOnContour[i].direction;
+//        for(int u = 0; u < FoundPointOnContour.size(); u++){
+//            if(line == FoundPointOnContour[u].line && 0 < FoundPointOnContour[u].contour && FoundPointOnContour[i].direction == FoundPointOnContour[u].direction){
+//                Point1 = FoundPointOnContour[u].Points;
+//            }
+//        }
+//        if(Point0.size() > 0 && Point1.size() > 0){
+
+
+//        for(int i = 1; i < Point0.size(); i++){
+//            for(int u = 1; u < Point1.size(); u++){
+//                DistanceBetweenPoints.push_back(sqrt( pow( Point0[i].x-Point1[u].x, 2) + pow( Point0[i].x-Point1[u].y, 2)));
+//            }
+//        }
+//        }
+//       double test;
+//    }
 
 
 
