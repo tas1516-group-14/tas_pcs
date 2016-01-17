@@ -16,6 +16,14 @@ struct Schnittpunkte{
 
 };
 
+struct Waypoint{
+    cv::Point Point1;
+    cv::Point Point2;
+    cv::Point AveragePoint;
+    double Distance;
+
+};
+
 int main()
 {
 
@@ -127,7 +135,7 @@ int main()
 
 
 
-
+    //Bereinignung
     for(int i = 0; i <  FoundPointOnContour.size(); i++){
         double direction0    =   FoundPointOnContour[i].direction;
         double line0         =   FoundPointOnContour[i].line;
@@ -147,6 +155,76 @@ int main()
             i =  0;
         }
     }
+
+
+
+    std::vector<Waypoint> Waypoints;
+    for(int i = 0; i < FoundPointOnContour.size(); i++){
+        std::vector<cv::Point> Points1 = FoundPointOnContour[i].Points;
+        double contour1 = FoundPointOnContour[i].contour;
+        for(int u = 0; u < FoundPointOnContour.size(); u++){
+            double contour2 = FoundPointOnContour[u].contour;
+            if(contour1 != contour2){
+                std::vector<cv::Point> Points2 = FoundPointOnContour[u].Points;
+                for(int z = 0; z < Points1.size(); z++){
+                    for(int t = 0; t < Points2.size(); t++){
+                        double Distance = sqrt( pow((Points1[z].x - Points2[t].x), 2) + pow((Points1[z].y - Points2[t].y), 2) );
+                        if(Distance > 30 && Distance < 50){
+                            cv::Point AveragePoint;
+                            AveragePoint.x = (Points1[z].x + Points2[t].x)/2;
+                            AveragePoint.y = (Points1[z].y + Points2[t].y)/2;
+
+
+                            Waypoint FoundWayPoint;
+                            FoundWayPoint.Point1 = Points1[z];
+                            FoundWayPoint.Point2 = Points2[t];
+                            FoundWayPoint.Distance = Distance;
+                            FoundWayPoint.AveragePoint = AveragePoint;
+
+                            Waypoints.push_back(FoundWayPoint);
+
+                        }
+                    }
+                }
+            }
+        }
+
+//        std::vector<Schnittpunkte> PointsOnLine;
+//        double line = FoundPointOnContour[i].line;
+//        double direction = FoundPointOnContour[i].direction;
+
+
+//        for(int u = 0; u < FoundPointOnContour.size(); u++){
+//            if(line == FoundPointOnContour[u].line && direction == FoundPointOnContour[u].direction){
+//                PointsOnLine.push_back(FoundPointOnContour[u]);
+//            }
+//        }
+
+//        for(int t = 0; t < PointsOnLine.size(); t++){
+
+//        }
+
+
+
+
+    }
+    cv::imwrite("test.png", ContourImage);
+
+    for(int i = 0; i < Waypoints.size(); i++){
+        double Point1x, Point1y, Point2x, Point2y, AveragePointx, AveragePointy;
+        Point1x = Waypoints[i].Point1.x;
+        Point1y = Waypoints[i].Point1.y;
+        Point2x = Waypoints[i].Point2.x;
+        Point2y = Waypoints[i].Point2.y;
+
+        AveragePointx = Waypoints[i].AveragePoint.x;
+        AveragePointy = Waypoints[i].AveragePoint.y;
+
+        debug.DrawLines(ContourImage, Point1x, Point1y, Point2x, Point2y, cv::Scalar(0,0,255), 1);
+        debug.DrawLines(ContourImage, AveragePointx, AveragePointy, AveragePointx, AveragePointy, cv::Scalar(0,255,0), 3);
+
+    }
+
 
 
     //Zeichnen der Punkte und Schnittlinien
