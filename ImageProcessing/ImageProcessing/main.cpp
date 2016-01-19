@@ -31,6 +31,12 @@ int main()
     DebugFunctions debug;
 
     InputImage = cv::imread("Map.png");
+    if(InputImage.empty()){
+        cout<< "Bild konnte nicht geladen werden!";
+        cv::waitKey(0);
+        return 0;
+
+    }
     debug.BildAnzeigen("Eingangsbild:", InputImage);
 
 
@@ -65,17 +71,19 @@ int main()
     vector< cv::Vec4i > hierarchy2;
     for(int i = 0; i < Contour.size(); i++ ){
         static double NextContour;
-        if(hierarchy[i][3] == -1 && hierarchy[i][2] > 0 ){
+        static bool FoundOuterContour = false;
+        if(hierarchy[i][3] == -1 && hierarchy[i][2] > 0 && !FoundOuterContour){
             FoundContours.push_back(Contour[i]);
             hierarchy2.push_back(hierarchy[i]);
             NextContour = hierarchy[i][2];
             i = 0;
+            FoundOuterContour = true;
         }
-        if(NextContour >= 0){
+        if(NextContour >= 0 && FoundOuterContour){
             FoundContours.push_back(Contour[NextContour]);
             hierarchy2.push_back(hierarchy[NextContour]);
             NextContour = hierarchy[NextContour][0];
-        }else{
+        }else if(FoundOuterContour){
             break;
         }
     }
@@ -83,16 +91,9 @@ int main()
 
     cv::Mat ContourImage;
     ContourImage = InputImage;
-//    for( int i = 0; i< FoundContours.size(); i++ ){
-//        if(i == 0){
-//            cv::drawContours( ContourImage, FoundContours, i, cv::Scalar(255, 0,255), 2, 8, hierarchy, 0, cv::Point() );
-//        }else{
-//            cv::drawContours( ContourImage, FoundContours, i, cv::Scalar(0, 255,0), 2, 8, hierarchy, 0, cv::Point() );
-//        }
-//    }
 
-    int LineSizeRow = ContourImage.rows/50;
-    int LineSizeCol = ContourImage.cols/50;
+    int LineSizeRow = ContourImage.rows/100;
+    int LineSizeCol = ContourImage.cols/100;
 
 
     //Horizontale Linien
@@ -188,28 +189,55 @@ int main()
                 }
             }
         }
-
-//        std::vector<Schnittpunkte> PointsOnLine;
-//        double line = FoundPointOnContour[i].line;
-//        double direction = FoundPointOnContour[i].direction;
-
-
-//        for(int u = 0; u < FoundPointOnContour.size(); u++){
-//            if(line == FoundPointOnContour[u].line && direction == FoundPointOnContour[u].direction){
-//                PointsOnLine.push_back(FoundPointOnContour[u]);
-//            }
-//        }
-
-//        for(int t = 0; t < PointsOnLine.size(); t++){
-
-//        }
-
-
-
-
     }
-    cv::imwrite("test.png", ContourImage);
 
+
+
+    /*  Doesn't work, because the centerpoint of the image is not the centerpoint of the way
+        trying to get the right way
+    */
+    double CenterPointX = ContourImage.cols/2-5;
+    double CenterPointY = ContourImage.rows/2+65;
+    std::vector<double> WayPointDistance;
+    for(int i = 0; i < Waypoints.size(); i++){
+        cv::Point AveragePoint = Waypoints[i].AveragePoint;
+        double Distance = sqrt( pow((AveragePoint.x - CenterPointX), 2) + pow((AveragePoint.y - CenterPointY), 2) );
+        WayPointDistance.push_back(Distance);
+    }
+    double SumWayPoints;
+    for(int i = 0; i < WayPointDistance.size(); i++){
+        SumWayPoints = SumWayPoints + WayPointDistance[i];
+    }
+    double AverageSumWayPoints = SumWayPoints / WayPointDistance.size();
+    for(int i = 0; i < Waypoints.size(); i++){
+        if(WayPointDistance[i] < (AverageSumWayPoints -20) || WayPointDistance[i] > (AverageSumWayPoints + 35)){
+            Waypoints.erase(Waypoints.begin() + i);
+            WayPointDistance.erase(WayPointDistance.begin() + i);
+            i = i -1;
+        }
+    }
+    debug.DrawLines(ContourImage, CenterPointX, CenterPointY, CenterPointX, CenterPointY, cv::Scalar(255,0,0), 5);
+    debug.DrawLines(ContourImage, CenterPointX-40, CenterPointY-40, CenterPointX-40, CenterPointY-40, cv::Scalar(0,255,0), 5);
+
+
+
+//    for(int i = 0; i < Waypoints.size(); i++){
+//        std::vector<double> WayPointDistance;
+//        cv::Point Point1 = Waypoints[i].AveragePoint;
+//        for(int u = 0; u < Waypoints.size(); u++){
+//            cv::Point Point2;
+//            if(i != u){ //not the same point
+//                Point2 = Waypoints[u].AveragePoint;
+//            }
+//            double Distance = sqrt( pow((Point1.x - Point2.x), 2) + pow((Point1.y - Point2.y), 2) );
+//            WayPointDistance.push_back(Distance);
+//        }
+//    }
+
+
+
+    //Zeichnen von Weglinien und Punkten
+    cv::Mat WaypointImage( ContourImage.cols, ContourImage.cols, CV_8UC3 );
     for(int i = 0; i < Waypoints.size(); i++){
         double Point1x, Point1y, Point2x, Point2y, AveragePointx, AveragePointy;
         Point1x = Waypoints[i].Point1.x;
@@ -223,9 +251,20 @@ int main()
         debug.DrawLines(ContourImage, Point1x, Point1y, Point2x, Point2y, cv::Scalar(0,0,255), 1);
         debug.DrawLines(ContourImage, AveragePointx, AveragePointy, AveragePointx, AveragePointy, cv::Scalar(0,255,0), 3);
 
+
+        ///debug.DrawLines(WaypointImage, Point1x, Point1y, Point2x, Point2y, cv::Scalar(0,0,255), 1);
+        debug.DrawLines(WaypointImage, AveragePointx, AveragePointy, AveragePointx, AveragePointy, cv::Scalar(0,255,0), 1);
+
+
     }
 
+    debug.BildAnzeigen("Before morph:WaypointImage:", WaypointImage);
 
+    int SizeForMorph2 = 2.5;
+    cv::Mat element2 = cv::getStructuringElement(0, cv::Size(2*SizeForMorph2, 2*SizeForMorph2), cv::Point(SizeForMorph2,SizeForMorph2));
+    cv::morphologyEx(WaypointImage, WaypointImage, CV_MOP_CLOSE , element2);
+
+    debug.BildAnzeigen("After morph: WaypointImage:", WaypointImage);
 
     //Zeichnen der Punkte und Schnittlinien
     for(int u = 0; u < FoundPointOnContour.size(); u++){
@@ -246,40 +285,6 @@ int main()
 
         }
     }
-
-
-
-//    cout << '\a' << endl;
-
-//    double MatrixDistance;
-
-//    for(int i = 0; i < FoundPointOnContour.size(); i++){
-//        std::vector<double> PointDistance0,PointDistance1, DistanceBetweenPoints;
-//        std::vector<cv::Point> Point0, Point1;
-//        Point0 = FoundPointOnContour[i].Points;
-//        double line = FoundPointOnContour[i].line;
-//        double direction = FoundPointOnContour[i].direction;
-//        for(int u = 0; u < FoundPointOnContour.size(); u++){
-//            if(line == FoundPointOnContour[u].line && 0 < FoundPointOnContour[u].contour && FoundPointOnContour[i].direction == FoundPointOnContour[u].direction){
-//                Point1 = FoundPointOnContour[u].Points;
-//            }
-//        }
-//        if(Point0.size() > 0 && Point1.size() > 0){
-
-
-//        for(int i = 1; i < Point0.size(); i++){
-//            for(int u = 1; u < Point1.size(); u++){
-//                DistanceBetweenPoints.push_back(sqrt( pow( Point0[i].x-Point1[u].x, 2) + pow( Point0[i].x-Point1[u].y, 2)));
-//            }
-//        }
-//        }
-//       double test;
-//    }
-
-
-
-
-
     debug.BildAnzeigen("Ergebnis:", ContourImage);
 
 
