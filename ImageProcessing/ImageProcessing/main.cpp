@@ -1,3 +1,8 @@
+/*
+Wichtiges Kriterium für die Bildanalyse ist die Betrachtung der Wegbreite,
+welche als bekannt vorrausgesetzt wird!
+
+*/
 #include <iostream>
 #include <ncurses.h>
 
@@ -30,7 +35,7 @@ int main()
     cv::Mat InputImage, GrayscaleImage, BinaryImage, BinaryImageManipulated;
     DebugFunctions debug;
 
-    InputImage = cv::imread("Map.png");
+    InputImage = cv::imread("test.png");
     if(InputImage.empty()){
         cout<< "Bild konnte nicht geladen werden!";
         cv::waitKey(0);
@@ -191,51 +196,6 @@ int main()
         }
     }
 
-
-
-    /*  Doesn't work, because the centerpoint of the image is not the centerpoint of the way
-        trying to get the right way
-    */
-    double CenterPointX = ContourImage.cols/2-5;
-    double CenterPointY = ContourImage.rows/2+65;
-    std::vector<double> WayPointDistance;
-    for(int i = 0; i < Waypoints.size(); i++){
-        cv::Point AveragePoint = Waypoints[i].AveragePoint;
-        double Distance = sqrt( pow((AveragePoint.x - CenterPointX), 2) + pow((AveragePoint.y - CenterPointY), 2) );
-        WayPointDistance.push_back(Distance);
-    }
-    double SumWayPoints;
-    for(int i = 0; i < WayPointDistance.size(); i++){
-        SumWayPoints = SumWayPoints + WayPointDistance[i];
-    }
-    double AverageSumWayPoints = SumWayPoints / WayPointDistance.size();
-    for(int i = 0; i < Waypoints.size(); i++){
-        if(WayPointDistance[i] < (AverageSumWayPoints -20) || WayPointDistance[i] > (AverageSumWayPoints + 35)){
-            Waypoints.erase(Waypoints.begin() + i);
-            WayPointDistance.erase(WayPointDistance.begin() + i);
-            i = i -1;
-        }
-    }
-    debug.DrawLines(ContourImage, CenterPointX, CenterPointY, CenterPointX, CenterPointY, cv::Scalar(255,0,0), 5);
-    debug.DrawLines(ContourImage, CenterPointX-40, CenterPointY-40, CenterPointX-40, CenterPointY-40, cv::Scalar(0,255,0), 5);
-
-
-
-//    for(int i = 0; i < Waypoints.size(); i++){
-//        std::vector<double> WayPointDistance;
-//        cv::Point Point1 = Waypoints[i].AveragePoint;
-//        for(int u = 0; u < Waypoints.size(); u++){
-//            cv::Point Point2;
-//            if(i != u){ //not the same point
-//                Point2 = Waypoints[u].AveragePoint;
-//            }
-//            double Distance = sqrt( pow((Point1.x - Point2.x), 2) + pow((Point1.y - Point2.y), 2) );
-//            WayPointDistance.push_back(Distance);
-//        }
-//    }
-
-
-
     //Zeichnen von Weglinien und Punkten
     cv::Mat WaypointImage( ContourImage.cols, ContourImage.cols, CV_8UC3 );
     for(int i = 0; i < Waypoints.size(); i++){
@@ -254,17 +214,108 @@ int main()
 
         ///debug.DrawLines(WaypointImage, Point1x, Point1y, Point2x, Point2y, cv::Scalar(0,0,255), 1);
         debug.DrawLines(WaypointImage, AveragePointx, AveragePointy, AveragePointx, AveragePointy, cv::Scalar(0,255,0), 1);
-
-
     }
-
     debug.BildAnzeigen("Before morph:WaypointImage:", WaypointImage);
-
-    int SizeForMorph2 = 2.5;
+    // Morphology
+    cv::Mat WaypointImageBinary;
+    int SizeForMorph2 = 2;
     cv::Mat element2 = cv::getStructuringElement(0, cv::Size(2*SizeForMorph2, 2*SizeForMorph2), cv::Point(SizeForMorph2,SizeForMorph2));
     cv::morphologyEx(WaypointImage, WaypointImage, CV_MOP_CLOSE , element2);
 
-    debug.BildAnzeigen("After morph: WaypointImage:", WaypointImage);
+    
+    cv::cvtColor(WaypointImage, WaypointImageBinary, CV_RGB2GRAY);
+
+
+
+    
+    cv::inRange(WaypointImageBinary, cv::Scalar(254,254,254), cv::Scalar(255,255,255), BinaryImage);
+    debug.BildAnzeigen("After inrange: WaypointImage:", WaypointImageBinary);
+
+    std::vector<cv::Vec4f> lines;
+    vector<vector<cv::Point> > ContourWayPoint;
+    vector< cv::Vec4i > hierarchyWayPoint;
+    cv::findContours(WaypointImageBinary, ContourWayPoint, hierarchyWayPoint, CV_RETR_TREE, CV_CHAIN_APPROX_NONE, cv::Point(0, 0) );
+
+
+
+    for(int i = 0; i < ContourWayPoint.size(); i++){
+        cv::drawContours(WaypointImage, ContourWayPoint, i, cv::Scalar(0,0,255), 1);
+    }
+    debug.BildAnzeigen("After contour: WaypointImage:", WaypointImage);
+
+    for(int i = 0; i < ContourWayPoint.size(); i++){
+        //Bereinigen von kleinen Contouren
+        if(ContourWayPoint[i].size() < 20){
+            ContourWayPoint.erase(ContourWayPoint.begin() +i);
+            i = i -1;
+        }
+    }
+
+    for(int i = 0; i < ContourWayPoint.size(); i++){
+        cv::Vec4f line;
+        cv::fitLine(cv::Mat(ContourWayPoint[i]),line,2,0,0.01,0.01);
+        lines.push_back(line);
+
+    }
+
+//    for( int i = 0; i < lines.size(); i++){
+//        cv::Vec4f line = lines[i];
+//        int lefty = (-line[2]*line[1]/line[0])+line[3];
+//        int righty = ((WaypointImage.cols-line[2])*line[1]/line[0])+line[3];
+
+//        cv::line(WaypointImage,cv::Point(WaypointImage.cols-1,righty),cv::Point(0,lefty),cv::Scalar(0,255,0),2);
+//    }
+//    debug.BildAnzeigen("After clearing line: WaypointImage:", WaypointImage);
+
+
+
+
+    //bereinigen der linen, suche nach 2 orthogonalen schnittlinien
+    for(int i = 0; i < lines.size(); i++){
+        std::vector<float> Angles;
+        cv::Vec4f Line1 = lines[i];
+        for(int u = 0; u < lines.size(); u++){
+            cv::Vec4f Line2 = lines[u];
+            float Scalar = Line1[0]*Line2[0]+Line1[1]*Line2[1];
+            float Abs1 = abs(Line1[0])+abs(Line1[1]);
+            float Abs2 = abs(Line2[0])+abs(Line2[1]);
+            float Alpha = (acos(abs(Scalar)/(Abs1*Abs2)))*57.2958;//1 grad -> 57.2958 deg
+            Angles.push_back(Alpha);
+        }
+        bool FoundOrthogonalLine1 = false;
+        bool FoundOrthogonalLine2 = false;
+        for(int z = 0; z < Angles.size(); z++){
+            float Alpha = Angles[z];
+            if(FoundOrthogonalLine1 == true && Alpha > 89 && Alpha < 91){
+                FoundOrthogonalLine2 = true;
+                break;
+            }
+            if(Alpha > 89 && Alpha < 91){
+                FoundOrthogonalLine1 = true;
+            }
+
+        }
+        if(!FoundOrthogonalLine2){
+            lines.erase(lines.begin()+i);
+            i = i-1;
+        }
+    }
+
+
+    cv::Mat LinesImage( ContourImage.cols, ContourImage.cols, CV_8UC3 );
+
+    for( int i = 0; i < lines.size(); i++){
+        cv::Vec4f line = lines[i];
+        int lefty = (-line[2]*line[1]/line[0])+line[3];
+        int righty = ((WaypointImage.cols-line[2])*line[1]/line[0])+line[3];
+
+        cv::line(LinesImage,cv::Point(WaypointImage.cols-1,righty),cv::Point(0,lefty),cv::Scalar(255,0,0),2);
+    }
+    debug.BildAnzeigen("After clearing line: LinesImage:", LinesImage);
+
+
+
+
 
     //Zeichnen der Punkte und Schnittlinien
     for(int u = 0; u < FoundPointOnContour.size(); u++){
