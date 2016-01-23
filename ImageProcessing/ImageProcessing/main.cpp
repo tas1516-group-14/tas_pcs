@@ -29,13 +29,18 @@ struct Waypoint{
 
 };
 
+struct WayPointsOnLine{
+    cv::Point Waypoint;
+    double Distance;
+};
+
 int main()
 {
 
     cv::Mat InputImage, GrayscaleImage, BinaryImage, BinaryImageManipulated;
     DebugFunctions debug;
 
-    InputImage = cv::imread("test.png");
+    InputImage = cv::imread("Map.png");
     if(InputImage.empty()){
         cout<< "Bild konnte nicht geladen werden!";
         cv::waitKey(0);
@@ -398,17 +403,130 @@ int main()
 
     //Final Image
 //    cv::Mat WaypointImageEmpty( ContourImage.cols, ContourImage.cols, CV_8UC1 );
+//    for(int i = 0; i < Waypoints.size(); i++){
+//        double AveragePointx, AveragePointy;
+
+
+//        AveragePointx = Waypoints[i].AveragePoint.x;
+//        AveragePointy = Waypoints[i].AveragePoint.y;
+
+
+//        debug.DrawLines(WaypointImageFinal, AveragePointx, AveragePointy, AveragePointx, AveragePointy,cv::Scalar(0,255,0), 1);
+
+//    }
+    //get the right waypoint order
+    std::vector<cv::Point> Direction;
+    std::vector<cv::Point> Corners;
+
+    cv::Point2f Points[4];
+    LinesRectangle.points(Points);
+    cv::Point Point1 = Points[0];
+    cv::Point Point2 = Points[1];
+    cv::Point Point3 = Points[2];
+    cv::Point Point4 = Points[3];
+
+    Corners.push_back(Point1);
+    Corners.push_back(Point2);
+    Corners.push_back(Point3);
+    Corners.push_back(Point4);
+
+
+    cv::Point Direction1 = Point2 - Point1;
+    cv::Point Direction2 = Point3 - Point2;
+    cv::Point Direction3 = Point4 - Point3;
+    cv::Point Direction4 = Point1 - Point4;
+
+    Direction.push_back(Direction1);
+    Direction.push_back(Direction2);
+    Direction.push_back(Direction3);
+    Direction.push_back(Direction4);
+
+
+
+    std::vector<cv::Point> FinalWaypointInOrder;
+
+    //find 1. point next to the 1. corner
+    static std::vector<double> Distance;
     for(int i = 0; i < Waypoints.size(); i++){
-        double AveragePointx, AveragePointy;
 
+        double DistanceToPoint1 = sqrt( pow((Waypoints[i].AveragePoint.x - Corners[0].x), 2) + pow((Waypoints[i].AveragePoint.y - Corners[0].y), 2) );
+        Distance.push_back(DistanceToPoint1);
 
-        AveragePointx = Waypoints[i].AveragePoint.x;
-        AveragePointy = Waypoints[i].AveragePoint.y;
-
-
-        debug.DrawLines(WaypointImageFinal, AveragePointx, AveragePointy, AveragePointx, AveragePointy,cv::Scalar(0,255,0), 1);
 
     }
+    double MinNumber = Distance[0], Element = 0;
+    for(int i = 0; i < Distance.size(); i++){
+        if (Distance[i]<MinNumber){
+                MinNumber = Distance[i];
+                Element = i;
+        }
+    }
+    FinalWaypointInOrder.push_back(Waypoints[Element].AveragePoint);
+
+
+
+
+    for(int i = 0; i < 5; i++){
+        std::vector<WayPointsOnLine> WayPointsOnLineWDistance;
+        std::vector<cv::Point> WaypointsOnDirection;
+        cv::Point CurrentDirection = Direction[i];
+        for(int u = 0; u < Waypoints.size(); u++){
+            cv::Point NextDirection = Waypoints[u].AveragePoint - Corners[i];
+            float Scalar = CurrentDirection.x*NextDirection.x+CurrentDirection.y*NextDirection.y;
+            float Abs1 = cv::norm(NextDirection);
+            float Abs2 = cv::norm(CurrentDirection);
+            float Alpha = (acos(abs(Scalar)/(Abs1*Abs2)))*57.2958;//1 grad -> 57.2958 deg
+
+            if(Alpha < 10){
+                WaypointsOnDirection.push_back(Waypoints[u].AveragePoint);
+            }
+        }
+        std::vector<double> Distance;
+        for(int u = 0; u < WaypointsOnDirection.size(); u++){
+            WayPointsOnLine CurrentWaypoint;
+
+            double DistanceToPoint = sqrt( pow((WaypointsOnDirection[u].x - Corners[i].x), 2) + pow((WaypointsOnDirection[u].y - Corners[i].y), 2) );
+            CurrentWaypoint.Distance = DistanceToPoint;
+            CurrentWaypoint.Waypoint = WaypointsOnDirection[u];
+
+            Distance.push_back(DistanceToPoint);
+            WayPointsOnLineWDistance.push_back(CurrentWaypoint);
+        }
+        std::sort (Distance.begin(), Distance.end());
+        Distance.erase(std::unique(Distance.begin(),Distance.end()),Distance.end());
+        for(int u = 0; u < Distance.size(); u++){
+            for(int z = 0; z < Distance.size(); z++){
+                if(Distance[u] == WayPointsOnLineWDistance[z].Distance){
+                    FinalWaypointInOrder.push_back(WayPointsOnLineWDistance[z].Waypoint);
+                }
+            }
+
+        }
+    }
+
+    for(int i = 0; i < FinalWaypointInOrder.size(); i++){
+        double AveragePointx, AveragePointy;
+        double farbe1 = farbe1 +1;
+        if(farbe1 > 255){
+            farbe1 = 0;
+        }
+        cv::Scalar color = cv::Scalar( 0, farbe1, 255 );
+
+        AveragePointx = FinalWaypointInOrder[i].x;
+        AveragePointy = FinalWaypointInOrder[i].y;
+        if(i == 0){
+            debug.DrawLines(WaypointImageFinal, AveragePointx, AveragePointy, AveragePointx, AveragePointy,cv::Scalar(0,255,0), 5);
+
+        }else{
+            debug.DrawLines(WaypointImageFinal, AveragePointx, AveragePointy, AveragePointx, AveragePointy,color, 3);
+
+        }
+
+
+    }
+    cv::imwrite("OutputWaypoints.png", WaypointImageFinal);
+
+
 //    cv::Point2f rect_points[4];
 //    LinesRectangle.points( rect_points );
 //    int u = 0;
