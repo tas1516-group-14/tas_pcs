@@ -42,6 +42,8 @@ int main()
         return 0;
 
     }
+    cv::Mat WaypointImageFinal;
+    WaypointImageFinal = InputImage.clone();
     debug.BildAnzeigen("Eingangsbild:", InputImage);
 
 
@@ -175,7 +177,7 @@ int main()
                 for(int z = 0; z < Points1.size(); z++){
                     for(int t = 0; t < Points2.size(); t++){
                         double Distance = sqrt( pow((Points1[z].x - Points2[t].x), 2) + pow((Points1[z].y - Points2[t].y), 2) );
-                        if(Distance > 30 && Distance < 50){
+                        if(Distance > 30 && Distance < 50){ //Wegbreite
                             cv::Point AveragePoint;
                             AveragePoint.x = (Points1[z].x + Points2[t].x)/2;
                             AveragePoint.y = (Points1[z].y + Points2[t].y)/2;
@@ -238,18 +240,28 @@ int main()
 
 
 
+
+
+    for(int i = 0; i < ContourWayPoint.size(); i++){
+        cv::RotatedRect Rectangle;
+        Rectangle = cv::minAreaRect(ContourWayPoint[i]);
+        double Area = Rectangle.size.area();
+        if(Area < 100){
+            ContourWayPoint.erase(ContourWayPoint.begin()+i);
+            i = i -1;
+        }else if(Rectangle.size.height > 5*Rectangle.size.width || 5*Rectangle.size.height < Rectangle.size.width){
+
+        }else{
+            ContourWayPoint.erase(ContourWayPoint.begin()+i);
+            i = i -1;
+
+        }
+
+    }
     for(int i = 0; i < ContourWayPoint.size(); i++){
         cv::drawContours(WaypointImage, ContourWayPoint, i, cv::Scalar(0,0,255), 1);
     }
     debug.BildAnzeigen("After contour: WaypointImage:", WaypointImage);
-
-    for(int i = 0; i < ContourWayPoint.size(); i++){
-        //Bereinigen von kleinen Contouren
-        if(ContourWayPoint[i].size() < 20){
-            ContourWayPoint.erase(ContourWayPoint.begin() +i);
-            i = i -1;
-        }
-    }
 
     for(int i = 0; i < ContourWayPoint.size(); i++){
         cv::Vec4f line;
@@ -286,11 +298,11 @@ int main()
         bool FoundOrthogonalLine2 = false;
         for(int z = 0; z < Angles.size(); z++){
             float Alpha = Angles[z];
-            if(FoundOrthogonalLine1 == true && Alpha > 89 && Alpha < 91){
+            if(FoundOrthogonalLine1 == true && Alpha > 88 && Alpha < 91){
                 FoundOrthogonalLine2 = true;
                 break;
             }
-            if(Alpha > 89 && Alpha < 91){
+            if(Alpha > 88 && Alpha < 91){
                 FoundOrthogonalLine1 = true;
             }
 
@@ -311,10 +323,115 @@ int main()
 
         cv::line(LinesImage,cv::Point(WaypointImage.cols-1,righty),cv::Point(0,lefty),cv::Scalar(255,0,0),2);
     }
+
+
+
+    vector<vector<cv::Point> > ContourLines;
+    vector< cv::Vec4i > hierarchyLines;
+    cv::Mat LinesImageBinary;
+    cv::inRange(LinesImage, cv::Scalar(254,0,0), cv::Scalar(255,0,0), LinesImageBinary );
+    cv::findContours(LinesImageBinary, ContourLines, hierarchyLines, CV_RETR_TREE, CV_CHAIN_APPROX_NONE, cv::Point(0, 0) );
+    cv::RotatedRect LinesRectangle;
+    for(int i = 0; i < ContourLines.size(); i++){
+        cv::drawContours(LinesImage,ContourLines,i, cv::Scalar(0,0,255), 1 );
+    }
+    for(int i = 0; i < ContourLines.size(); i++){
+        LinesRectangle = cv::minAreaRect(ContourLines[i]);
+        if(LinesRectangle.size.area() < 400000 && LinesRectangle.size.area() > 10000){//Äußere Contour ignorieren
+            if(LinesRectangle.size.height < (LinesRectangle.size.width*1.1) && LinesRectangle.size.height > (LinesRectangle.size.width*0.9)){
+                break;
+            }
+        }
+    }
+    cv::Point2f rect_points[4];
+    LinesRectangle.points( rect_points );
+    for( int j = 0; j < 4; j++ ){
+        cv::line( LinesImage, rect_points[j], rect_points[(j+1)%4], cv::Scalar(0,255,0),5);
+        cv::line( WaypointImageFinal, rect_points[j], rect_points[(j+1)%4], cv::Scalar(0,0,255),1);
+    }
     debug.BildAnzeigen("After clearing line: LinesImage:", LinesImage);
 
+    double CenterPointX = LinesRectangle.center.x;
+    double CenterPointY = LinesRectangle.center.y;
+    std::vector<double> WayPointDistanceToCenter;
+    std::vector<double> WayPointDistanceToPoint1;
+    std::vector<double> WayPointDistanceToPoint2;
+    std::vector<double> WayPointDistanceToPoint3;
+    std::vector<double> WayPointDistanceToPoint4;
+    for(int i = 0; i < Waypoints.size(); i++){
+        cv::Point AveragePoint = Waypoints[i].AveragePoint;
+        double DistanceToCenter = sqrt( pow((AveragePoint.x - CenterPointX), 2) + pow((AveragePoint.y - CenterPointY), 2) );
+        cv::Point2f Points[4];
+        LinesRectangle.points(Points);
+        cv::Point Point1 = Points[0];
+        cv::Point Point2 = Points[1];
+        cv::Point Point3 = Points[2];
+        cv::Point Point4 = Points[3];
+        double DistanceToPoint1 = sqrt( pow((AveragePoint.x - Point1.x), 2) + pow((AveragePoint.y - Point1.y), 2) );
+        double DistanceToPoint2 = sqrt( pow((AveragePoint.x - Point2.x), 2) + pow((AveragePoint.y - Point2.y), 2) );
+        double DistanceToPoint3 = sqrt( pow((AveragePoint.x - Point3.x), 2) + pow((AveragePoint.y - Point3.y), 2) );
+        double DistanceToPoint4 = sqrt( pow((AveragePoint.x - Point4.x), 2) + pow((AveragePoint.y - Point4.y), 2) );
+        WayPointDistanceToCenter.push_back(DistanceToCenter);
+        WayPointDistanceToPoint1.push_back(DistanceToPoint1);
+        WayPointDistanceToPoint2.push_back(DistanceToPoint2);
+        WayPointDistanceToPoint3.push_back(DistanceToPoint3);
+        WayPointDistanceToPoint4.push_back(DistanceToPoint4);
+    }
+
+    for(double i = 0; i < Waypoints.size(); i++){
+        if(WayPointDistanceToCenter[i] < ((LinesRectangle.size.width)/2 - 5) || WayPointDistanceToCenter[i] > ((LinesRectangle.size.width)/2 + 15)){
+            double DistanceToPoint1 = WayPointDistanceToPoint1[i];
+            double DistanceToPoint2 = WayPointDistanceToPoint2[i];
+            double DistanceToPoint3 = WayPointDistanceToPoint3[i];
+            double DistanceToPoint4 = WayPointDistanceToPoint4[i];
+            if( DistanceToPoint1 > 25 && DistanceToPoint2 > 25 && DistanceToPoint3 > 25 && DistanceToPoint4 > 25){
+                Waypoints.erase(Waypoints.begin() + i);
+                WayPointDistanceToCenter.erase(WayPointDistanceToCenter.begin() + i);
+                WayPointDistanceToPoint1.erase(WayPointDistanceToPoint1.begin() + i);
+                WayPointDistanceToPoint2.erase(WayPointDistanceToPoint2.begin() + i);
+                WayPointDistanceToPoint3.erase(WayPointDistanceToPoint3.begin() + i);
+                WayPointDistanceToPoint4.erase(WayPointDistanceToPoint4.begin() + i);
+                i = i -1;
+            }
+        }
+    }
+
+    //Final Image
+//    cv::Mat WaypointImageEmpty( ContourImage.cols, ContourImage.cols, CV_8UC1 );
+    for(int i = 0; i < Waypoints.size(); i++){
+        double AveragePointx, AveragePointy;
 
 
+        AveragePointx = Waypoints[i].AveragePoint.x;
+        AveragePointy = Waypoints[i].AveragePoint.y;
+
+
+        debug.DrawLines(WaypointImageFinal, AveragePointx, AveragePointy, AveragePointx, AveragePointy,cv::Scalar(0,255,0), 1);
+
+    }
+//    cv::Point2f rect_points[4];
+//    LinesRectangle.points( rect_points );
+//    int u = 0;
+//    for( int j = 0; j < 4; j++ ){
+//        cv::Point2f Plus;
+//        u = u+1;
+//        Plus.x = pow(-1,u)*-10;
+//        Plus.y = pow(-1,u)*10;
+//        cv::line( WaypointImageEmpty, rect_points[j]+Plus, rect_points[(j+1)%4]+Plus, 255,5);
+//    }
+
+//    for( int j = 0; j < 4; j++ ){
+//        cv::Point2f Plus;
+//        u = u+1;
+//        Plus.x = pow(-1,u)*-10;
+//        Plus.y = pow(-1,u)*10;
+//        cv::line( WaypointImageEmpty, rect_points[j]+Plus, rect_points[(j+1)%4]+Plus, 255,5);
+//    }
+
+//    debug.BildAnzeigen("WaypointImageEmpty:", WaypointImageEmpty);
+
+
+    debug.BildAnzeigen("WaypointImageFinal:", WaypointImageFinal);
 
 
     //Zeichnen der Punkte und Schnittlinien
