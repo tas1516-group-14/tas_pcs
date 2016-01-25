@@ -40,13 +40,13 @@ int main()
     cv::Mat InputImage, GrayscaleImage, BinaryImage, BinaryImageManipulated;
     DebugFunctions debug;
 
-    InputImage = cv::imread("Map.png");
-    if(InputImage.empty()){
-        cout<< "Bild konnte nicht geladen werden!";
-        cv::waitKey(0);
-        return 0;
-
+    while(1){
+        InputImage = cv::imread("Map.png");
+        if(!InputImage.empty()){
+            break;
+        }
     }
+
     cv::Mat WaypointImageFinal;
     WaypointImageFinal = InputImage.clone();
     debug.BildAnzeigen("Eingangsbild:", InputImage);
@@ -477,7 +477,7 @@ int main()
             float Abs2 = cv::norm(CurrentDirection);
             float Alpha = (acos(abs(Scalar)/(Abs1*Abs2)))*57.2958;//1 grad -> 57.2958 deg
 
-            if(Alpha < 10){
+            if(Alpha < 2){
                 WaypointsOnDirection.push_back(Waypoints[u].AveragePoint);
             }
         }
