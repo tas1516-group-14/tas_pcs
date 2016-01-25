@@ -116,6 +116,7 @@ int main()
     }
 
 
+    
     int LineSizeRow = ContourImage.rows/100;
     int LineSizeCol = ContourImage.cols/100;
 
